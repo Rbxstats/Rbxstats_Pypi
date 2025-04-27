@@ -10,7 +10,7 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 setup(
     # Basic package info
     name="rbxstats",
-    version="3.0.9",
+    version="3.0.10",
     description="A comprehensive Python client for the RbxStats API",
     long_description=long_description,
     long_description_content_type="text/markdown",
