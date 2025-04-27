@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rbxstats",
-    version="3.0.4",
+    version="3.0.5",
     description="A comprehensive client for the RbxStats API",
     author="Rbxstats",
     author_email="rbxstatsxyz@gmail.com",
