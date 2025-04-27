@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rbxstats",
-    version="0.2.7",
+    version="0.3.0",
     description="A Python client for accessing the RBXStats API.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
