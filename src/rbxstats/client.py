@@ -505,11 +505,11 @@ class RbxStatsClient:
         
         def search(self, query: str, use_cache: bool = True) -> ApiResponse[Dict[str, Any]]:
             """Search for offsets by keyword."""
-            return self.client._get("offsets/search", params={"q": query}, use_cache=use_cache)
+            return self.client._get(f"offsets/prefix/{query}", use_cache=use_cache)
         
         async def search_async(self, query: str, use_cache: bool = True) -> ApiResponse[Dict[str, Any]]:
             """Search for offsets by keyword asynchronously."""
-            return await self.client._async_get("offsets/search", params={"q": query}, use_cache=use_cache)
+            return await self.client._async_get(f"offsets/prefix/{query}", use_cache=use_cache)
     
     class Exploits:
         """API operations related to exploits."""
