@@ -5,7 +5,7 @@ from enum import Enum
 from dataclasses import dataclass
 import time
 from urllib.parse import urljoin
-from .exceptions import import RbxStatsError, AuthenticationError, RateLimitError, NotFoundError, ServerError
+from .exceptions import RbxStatsError, AuthenticationError, RateLimitError, NotFoundError, ServerError
 
 import requests
 import aiohttp
