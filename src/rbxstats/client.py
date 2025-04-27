@@ -30,6 +30,35 @@ class ClientConfig:
     log_level: LogLevel = LogLevel.INFO
     cache_ttl: int = 60  # Cache time-to-live in seconds
 
+class Cache:
+    """Simple in-memory cache for API responses."""
+    
+    def __init__(self, ttl: int = 60):
+        self.cache: Dict[str, tuple[Any, float]] = {}
+        self.ttl = ttl
+        
+    def get(self, key: str) -> Optional[Any]:
+        """Get cached value if it exists and is not expired."""
+        if key in self.cache:
+            value, expiry = self.cache[key]
+            if time.time() < expiry:
+                return value
+            else:
+                del self.cache[key]
+        return None
+        
+    def set(self, key: str, value: Any) -> None:
+        """Cache a value with expiration based on TTL."""
+        self.cache[key] = (value, time.time() + self.ttl)
+        
+    def clear(self) -> None:
+        """Clear all cached items."""
+        self.cache.clear()
+        
+    def set_ttl(self, ttl: int) -> None:
+        """Update the cache TTL."""
+        self.ttl = ttl
+
 class ApiResponse(Generic[T]):
     """Wrapper for API responses with metadata."""
     
