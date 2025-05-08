@@ -29,7 +29,7 @@ response = client.versions.latest()
 
 # Access the data
 latest_version = response.data
-print(f"Latest Roblox Version: {latest_version['version']}")
+print(f"Latest Roblox Version: {latest_version['Windows']}")
 ```
 
 ## Configuration
@@ -85,16 +85,16 @@ Methods for retrieving Roblox offset data.
 all_offsets = client.offsets.all().data
 
 # Get a specific offset by name
-camera_pos = client.offsets.by_name("CameraPosition").data
+camera_pos = client.offsets.by_name("CameraPosition").data['CameraPosition']
 
 # Search offsets by prefix
-input_offsets = client.offsets.by_prefix("Input").data
+input_offsets = client.offsets.by_prefix("Input").data['Input']
 
 # Get camera-related offsets
 camera_offsets = client.offsets.camera().data
 
 # Search offsets by keyword
-search_results = client.offsets.search("player").data
+search_results = client.offsets.search("player").data['player']
 ```
 
 ### Exploits
@@ -121,7 +121,7 @@ detected = client.exploits.detected().data
 free_exploits = client.exploits.free().data
 
 # Get exploit by name
-synapse = client.exploits.by_name("Synapse").data
+synapse = client.exploits.by_name("Synapse")
 
 # Compare two exploits
 comparison = client.exploits.compare("Synapse", "KRNL").data
@@ -133,10 +133,10 @@ Methods for retrieving Roblox version information.
 
 ```python
 # Get latest Roblox version
-latest = client.versions.latest().data
+latest = client.versions.latest().data['Windows']
 
 # Get future/beta Roblox version
-future = client.versions.future().data
+future = client.versions.future().data['Windows']
 
 # Get version history (last 10 versions by default)
 history = client.versions.history().data
@@ -152,44 +152,8 @@ Methods for retrieving information about Roblox games.
 
 ```python
 # Get game information by ID
-adopt_me = client.game.by_id(920587237).data
-
-# Get popular games
-popular = client.game.popular().data
-popular_25 = client.game.popular(limit=25).data
-
-# Search for games
-simulator_games = client.game.search("simulator").data
-simulator_games_20 = client.game.search("simulator", limit=20).data
-
-# Get detailed game stats
-game_stats = client.game.stats(920587237).data
+adopt_me = client.game.by_id(920587237).data['gameName']
 ```
-
-### User
-
-Methods for retrieving information about Roblox users.
-
-```python
-# Get user by ID
-user = client.user.by_id(1).data
-
-# Get user by username
-user_by_name = client.user.by_username("Builderman").data
-
-# Get user's friends
-friends = client.user.friends(1).data
-friends_50 = client.user.friends(1, limit=50).data
-
-# Get user's badges
-badges = client.user.badges(1).data
-badges_50 = client.user.badges(1, limit=50).data
-
-# Search for users
-search_results = client.user.search("Build").data
-search_results_20 = client.user.search("Build", limit=20).data
-```
-
 ### Stats
 
 Methods for retrieving general statistics.
@@ -247,7 +211,7 @@ client = RbxStatsClient("your_api_key_here")
 
 try:
     response = client.game.by_id(123456789)
-    game_data = response.data
+    game_data = response.data['gameName']
 except AuthenticationError:
     print("Invalid API key")
 except RateLimitError as e:
