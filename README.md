@@ -1,273 +1,336 @@
-**RBXStatsClient Usage Guide**
+# RbxStats API Client
 
-A detailed walkthrough of the `rbxstats` Python client library for interacting with the RbxStats API.
+A comprehensive Python client for the RbxStats API, providing both synchronous and asynchronous access to Roblox data.
 
----
+## Features
 
-## Table of Contents
+- 🔄 Synchronous and asynchronous request support
+- 🔒 Automatic rate limit handling and retries
+- 🛡️ Detailed error handling and logging
+- 📦 Response caching for improved performance
+- 📊 Comprehensive API coverage for Roblox data
 
-1. [Installation](#installation)
-2. [Imports](#imports)
-3. [Client Initialization & Configuration](#initialization--configuration)
-4. [Resource Reference & Examples](#resource-reference--examples)
-   1. [Offsets](#offsets)
-   2. [Versions](#versions)
-   3. [Exploits](#exploits)
-   4. [Games](#games)
-   5. [Users](#users)
-   6. [Stats](#stats)
-5. [Advanced Configuration](#advanced-configuration)
-6. [Error Handling](#error-handling)
-7. [Full End-to-End Example](#full-end-to-end-example)
-
----
-
-## 1. Installation
-
-Install via pip:
+## Installation
 
 ```bash
 pip install rbxstats
 ```
 
-Use a virtual environment to isolate dependencies:
-
-```bash
-python -m venv venv
-source venv/bin/activate   # macOS/Linux
-venv\\Scripts\\activate  # Windows
-pip install rbxstats
-```
-
----
-
-## 2. Imports
-
-Two main styles:
+## Quick Start
 
 ```python
-# import full module
-ingest = __import__('rbxstats')
-import rbxstats
+from rbxstats import RbxStatsClient
 
-# or import specific classesrom rbxstats import RbxStatsClient, ClientConfig, LogLevel
+# Initialize the client with your API key
+client = RbxStatsClient("your_api_key_here")
+
+# Make a request
+response = client.versions.latest()
+
+# Access the data
+latest_version = response.data
+print(f"Latest Roblox Version: {latest_version['version']}")
 ```
 
----
+## Configuration
 
-## 3. Client Initialization & Configuration
+You can customize the client's behavior with the `ClientConfig` class:
 
 ```python
 from rbxstats import RbxStatsClient, ClientConfig, LogLevel
 
 config = ClientConfig(
-    timeout=10,            # seconds per request
-    max_retries=3,         # retry attempts on failure
-    retry_delay=1,         # seconds between retries
-    auto_retry=True,       # automatically retry on 429/5xx
-    log_level=LogLevel.INFO,
-    cache_ttl=60           # seconds to cache GET responses
+    timeout=15,              # Request timeout in seconds
+    max_retries=5,           # Maximum retry attempts
+    retry_delay=2,           # Initial delay between retries (exponential backoff applied)
+    auto_retry=True,         # Automatically retry failed requests
+    log_level=LogLevel.INFO, # Logging level
+    cache_ttl=300            # Cache time-to-live in seconds
 )
-client = RbxStatsClient(api_key="YOUR_API_KEY", config=config)
+
+client = RbxStatsClient("your_api_key_here", config=config)
 ```
 
-- **base_url**: override default (`https://api.rbxstats.xyz/api`)
-- **Logging**: set via `config.log_level` or `client.set_log_level(...)`
-- **Cache**: in-memory; clear with `client.clear_cache()`, TTL via `client.set_cache_ttl(...)`
+## Working with Responses
 
----
+All API methods return an `ApiResponse` object containing:
 
-## 4. Resource Reference & Examples
-
-The client exposes these resource groups in order below. Each method returns an `ApiResponse` with `.data`, `.status_code`, `.headers`, and `.request_time`.
-
-### 4.1 Offsets
-
-Offsets are memory addresses for Roblox client functions.
-
-| Method                          | Description                                 | Example call                         |
-| ------------------------------- | ------------------------------------------- | ------------------------------------ |
-| `offsets.all()`                 | List all offsets                            | `client.offsets.all()`               |
-| `offsets.by_name(name)`         | Fetch offset by exact name                  | `client.offsets.by_name("WalkSpeed")` |
-| `offsets.by_prefix(prefix)`     | List offsets starting with prefix           | `client.offsets.by_prefix("Cam")`  |
-| `offsets.camera()`              | Pre-filtered camera-related offsets         | `client.offsets.camera()`            |
-| `offsets.search(query)`         | Full-text search on offset descriptions     | `client.offsets.search("jump")`    |
-
-#### Example: retrieve and inspect camera offsets
+- `data`: The actual API response data
+- `status_code`: HTTP status code
+- `headers`: Response headers
+- `request_time`: Time taken for the request in seconds
+- `rate_limit_remaining`: Remaining API requests (if provided by the API)
+- `rate_limit_reset`: Time until rate limit reset (if provided by the API)
 
 ```python
-resp = client.offsets.camera()
-camera_offsets = resp.data.get('offsets', [])
-for off in camera_offsets:
-    print(off['name'], hex(off['address']))
-```  
+response = client.offsets.all()
 
----
+# Access response data
+offsets_data = response.data
 
-### 4.2 Versions
-
-Roblox client and beta version metadata.
-
-| Method                                 | Description                       | Example                                |
-| -------------------------------------- | --------------------------------- | -------------------------------------- |
-| `versions.latest()`                    | Current public Roblox version     | `client.versions.latest()`             |
-| `versions.future()`                    | Upcoming/beta Roblox version      | `client.versions.future()`             |
-| `versions.history(limit)`              | Historical version list           | `client.versions.history(limit=5)`     |
-| `versions.by_version(version_str)`     | Info for a specific version       | `client.versions.by_version("0.543.1")` |
-
-#### Example: compare latest vs future
-
-```python
-latest = client.versions.latest().datafuture = client.versions.future().data
-print("Latest:", latest['version'], "released", latest['released'])
-print("Future:", future['version'], "ETA", future['eta'])
-```  
-
----
-
-### 4.3 Exploits
-
-Information on available exploit tools.
-
-| Method                           | Description                              | Example                                           |
-| -------------------------------- | ---------------------------------------- | ------------------------------------------------- |
-| `exploits.all()`                 | All exploits                             | `client.exploits.all()`                          |
-| `exploits.windows()`, `.mac()`   | Platform-specific                        | `client.exploits.windows()`                      |
-| `exploits.free()`, `.undetected()` | Filter by cost or detection status     | `client.exploits.free()`                         |
-| `exploits.by_name(name)`         | Details on a named exploit               | `client.exploits.by_name("Krnl")`               |
-| `exploits.compare(a, b)`         | Compare two exploits feature-by-feature   | `client.exploits.compare("Krnl", "Synapse")` |
-
-#### Example: list free, undetected exploits
-
-```python
-resp = client.exploits.free().data
-for e in resp['exploits']:
-    if e['undetected']:
-        print(e['name'], "- version", e['version'])
-```  
-
----
-
-### 4.4 Games
-
-Roblox game metadata.
-
-| Method                                | Description                         | Example                                     |
-| ------------------------------------- | ----------------------------------- | ------------------------------------------- |
-| `game.by_id(game_id)`                 | Single game info                    | `client.game.by_id(123456789)`              |
-| `game.popular(limit)`                 | Top played games                    | `client.game.popular(limit=10)`             |
-| `game.search(q, limit)`               | Search by keyword                   | `client.game.search("tycoon", limit=5)`   |
-| `game.stats(game_id)`                 | Server & player stats for game      | `client.game.stats(123456789)`              |
-
----
-
-### 4.5 Users
-
-Roblox user data and relations.
-
-| Method                                   | Description                          | Example                                         |
-| ---------------------------------------- | ------------------------------------ | ----------------------------------------------- |
-| `user.by_id(user_id)`                    | Profile by ID                        | `client.user.by_id(1)`                          |
-| `user.by_username(username)`             | Profile by username                  | `client.user.by_username("builderman")`       |
-| `user.friends(user_id, limit)`           | Friends list                         | `client.user.friends(1, limit=20)`              |
-| `user.badges(user_id, limit)`            | Owned badges                         | `client.user.badges(1, limit=10)`               |
-| `user.search(q, limit)`                  | Search users by keyword              | `client.user.search("gamer", limit=5)`        |
-
----
-
-### 4.6 Stats
-
-API & Roblox service health and usage.
-
-| Method                           | Description                             | Example                         |
-| -------------------------------- | --------------------------------------- | ------------------------------- |
-| `stats.api_status()`             | RbxStats API health                     | `client.stats.api_status()`     |
-| `stats.roblox_status()`          | Roblox platform service status          | `client.stats.roblox_status()`  |
-| `stats.player_count()`           | Current total players online on Roblox  | `client.stats.player_count()`   |
-
----
-
-## 5. Advanced Configuration
-
-```python
-# Add custom HTTP headers\client.set_headers({"X-My-Header":"value"})
-
-# Change timeout mid-session
-client.set_timeout(20)
-
-# Adjust logging level
-from rbxstats import LogLevel
-client.set_log_level(LogLevel.DEBUG)
-
-# Manage cache
-client.clear_cache()
-client.set_cache_ttl(300)
+# Access metadata
+print(f"Status code: {response.status_code}")
+print(f"Request time: {response.request_time:.2f} seconds")
+print(f"Rate limit remaining: {response.rate_limit_remaining}")
 ```
 
----
+## API Reference
 
-## 6. Error Handling
+### Offsets
 
-Exceptions raised by the client:
-
-| Exception            | Condition                   | Attributes                  |
-| -------------------- | --------------------------- | --------------------------- |
-| AuthenticationError  | HTTP 401                    | None                        |
-| NotFoundError        | HTTP 404                    | None                        |
-| RateLimitError       | HTTP 429                    | `retry_after` (seconds)     |
-| ServerError          | HTTP 5xx                    | None                        |
-| RbxStatsError        | JSON/network/other failures | None                        |
+Methods for retrieving Roblox offset data.
 
 ```python
-from rbxstats.exceptions import RateLimitError, RbxStatsError
-try:
-    resp = client.game.by_id(0)
-except RateLimitError as e:
-    print(f"Rate limited. Retry after {e.retry_after}s")
-except RbxStatsError as e:
-    print("General API error:", e)
-```  
+# Get all offsets
+all_offsets = client.offsets.all().data
 
----
+# Get a specific offset by name
+camera_pos = client.offsets.by_name("CameraPosition").data
 
-## 7. Full End-to-End Example
+# Search offsets by prefix
+input_offsets = client.offsets.by_prefix("Input").data
+
+# Get camera-related offsets
+camera_offsets = client.offsets.camera().data
+
+# Search offsets by keyword
+search_results = client.offsets.search("player").data
+```
+
+### Exploits
+
+Methods for retrieving information about Roblox exploits.
+
+```python
+# Get all exploits
+all_exploits = client.exploits.all().data
+
+# Get Windows-compatible exploits
+windows_exploits = client.exploits.windows().data
+
+# Get Mac-compatible exploits
+mac_exploits = client.exploits.mac().data
+
+# Get undetected exploits
+undetected = client.exploits.undetected().data
+
+# Get detected exploits
+detected = client.exploits.detected().data
+
+# Get free exploits
+free_exploits = client.exploits.free().data
+
+# Get exploit by name
+synapse = client.exploits.by_name("Synapse").data
+
+# Compare two exploits
+comparison = client.exploits.compare("Synapse", "KRNL").data
+```
+
+### Versions
+
+Methods for retrieving Roblox version information.
+
+```python
+# Get latest Roblox version
+latest = client.versions.latest().data
+
+# Get future/beta Roblox version
+future = client.versions.future().data
+
+# Get version history (last 10 versions by default)
+history = client.versions.history().data
+history_20 = client.versions.history(limit=20).data
+
+# Get specific version
+specific = client.versions.by_version("0.547.0.4242435").data
+```
+
+### Game
+
+Methods for retrieving information about Roblox games.
+
+```python
+# Get game information by ID
+adopt_me = client.game.by_id(920587237).data
+
+# Get popular games
+popular = client.game.popular().data
+popular_25 = client.game.popular(limit=25).data
+
+# Search for games
+simulator_games = client.game.search("simulator").data
+simulator_games_20 = client.game.search("simulator", limit=20).data
+
+# Get detailed game stats
+game_stats = client.game.stats(920587237).data
+```
+
+### User
+
+Methods for retrieving information about Roblox users.
+
+```python
+# Get user by ID
+user = client.user.by_id(1).data
+
+# Get user by username
+user_by_name = client.user.by_username("Builderman").data
+
+# Get user's friends
+friends = client.user.friends(1).data
+friends_50 = client.user.friends(1, limit=50).data
+
+# Get user's badges
+badges = client.user.badges(1).data
+badges_50 = client.user.badges(1, limit=50).data
+
+# Search for users
+search_results = client.user.search("Build").data
+search_results_20 = client.user.search("Build", limit=20).data
+```
+
+### Stats
+
+Methods for retrieving general statistics.
+
+```python
+# Get API status
+api_status = client.stats.api_status().data
+
+# Get Roblox services status
+roblox_status = client.stats.roblox_status().data
+
+# Get current player count
+player_count = client.stats.player_count().data
+```
+
+## Asynchronous Usage
+
+All methods have asynchronous counterparts with `_async` suffix:
 
 ```python
 import asyncio
-from rbxstats import RbxStatsClient, ClientConfig, LogLevel
+from rbxstats import RbxStatsClient
 
-# Setup
-config = ClientConfig(log_level=LogLevel.DEBUG)
-client = RbxStatsClient(api_key="YOUR_API_KEY", config=config)
+async def main():
+    client = RbxStatsClient("your_api_key_here")
+    
+    # Make async requests
+    latest_version = await client.versions.latest_async()
+    game_info = await client.game.by_id_async(920587237)
+    
+    print(f"Latest version: {latest_version.data['version']}")
+    print(f"Game name: {game_info.data['name']}")
+    
+    # Don't forget to close the client
+    await client.close()
 
-# 1. Offsets: find jump-related offsets
-offs = client.offsets.search("jump").data['offsets']
-print("Jump Offsets:", [o['name'] for o in offs])
-
-# 2. Versions: show latest and next beta
-print(client.versions.latest().data)
-print(client.versions.future().data)
-
-# 3. Exploits: compare two
-comp = client.exploits.compare("Krnl", "Synapse").data
-print("Comparison:", comp)
-
-# 4. Game info: top 3 popular
-for g in client.game.popular(limit=3).data['games']:
-    print(g['id'], g['name'], g['playing'])
-
-# 5. User: builderman friends
-u = client.user.by_username("builderman").data
-friends = client.user.friends(u['id']).data['friends']
-print("Builderman's Friends:",[f['username'] for f in friends])
-
-# 6. Stats: current players
-print("Players online:", client.stats.player_count().data['count'])
-
-# Cleanup
-client.clear_cache()
-client.session.close()
+asyncio.run(main())
 ```
 
-Happy scripting with RbxStatsClient!
+## Handling Errors
 
+The library provides specific exception classes for different error types:
+
+```python
+from rbxstats import RbxStatsClient
+from rbxstats.exceptions import (
+    RbxStatsError,
+    AuthenticationError,
+    RateLimitError,
+    NotFoundError,
+    ServerError
+)
+
+client = RbxStatsClient("your_api_key_here")
+
+try:
+    response = client.game.by_id(123456789)
+    game_data = response.data
+except AuthenticationError:
+    print("Invalid API key")
+except RateLimitError as e:
+    print(f"Rate limit exceeded. Try again in {e.retry_after} seconds")
+except NotFoundError:
+    print("Game not found")
+except ServerError:
+    print("API server error")
+except RbxStatsError as e:
+    print(f"General error: {str(e)}")
+```
+
+## Advanced Usage
+
+### Configuring Cache
+
+Control caching behavior to improve performance:
+
+```python
+# Set cache TTL to 5 minutes
+client.set_cache_ttl(300)
+
+# Clear the cache
+client.clear_cache()
+
+# Disable cache for a specific request
+no_cache_response = client.versions.latest(use_cache=False)
+```
+
+### Customizing Headers
+
+Add custom headers to all requests:
+
+```python
+client.set_headers({
+    "X-Custom-Header": "value",
+    "User-Agent": "MyApp/1.0"
+})
+```
+
+### Adjusting Timeout
+
+Update the request timeout:
+
+```python
+# Set timeout to 30 seconds
+client.set_timeout(30)
+```
+
+### Context Managers
+
+Use the client as a context manager:
+
+```python
+# Synchronous context manager
+with RbxStatsClient("your_api_key_here") as client:
+    response = client.versions.latest()
+    print(response.data)
+    
+# Asynchronous context manager
+async with RbxStatsClient("your_api_key_here") as client:
+    response = await client.versions.latest_async()
+    print(response.data)
+```
+
+## Logging
+
+Adjust the logging level to see more or less information:
+
+```python
+from rbxstats import RbxStatsClient, LogLevel
+
+client = RbxStatsClient("your_api_key_here")
+
+# Set log level
+client.set_log_level(LogLevel.DEBUG)  # Verbose logging
+client.set_log_level(LogLevel.ERROR)  # Only log errors
+```
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
