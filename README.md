@@ -298,3 +298,6 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+
+<!-- Security scan triggered at 2026-09-05 07:27:32 -->
